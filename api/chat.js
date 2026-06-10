@@ -1,13 +1,5 @@
 export const config = { runtime: 'edge' };
 
-// =====================================================
-// 환경변수 (Vercel 대시보드 Settings > Environment Variables)
-// ANTHROPIC_API_KEY : sk-ant-api03-...
-// APPS_SCRIPT_URL   : https://script.google.com/macros/s/.../exec
-// ALERT_KEYWORD     : 담당자,불만,오류,환불,안됨  (쉼표로 구분)
-// ALERT_EMAIL       : 담당자 이메일 (Apps Script 쪽에서 사용)
-// =====================================================
-
 const SYSTEM_PROMPT = `당신은 "2026 경기도 5070 일자리박람회" 공식 안내 AI입니다.
 방문객과 구직자에게 박람회 정보를 친절하고 정확하게 안내하는 역할을 합니다.
 
@@ -114,27 +106,28 @@ export default async function handler(req) {
 
     const lastUserMessage = messages[messages.length - 1]?.content || '';
 
-    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'gpt-4o-mini',
         max_tokens: 1024,
-        system: SYSTEM_PROMPT,
-        messages: messages.slice(-10),
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          ...messages.slice(-10),
+        ],
       }),
     });
 
-    if (!claudeRes.ok) {
-      throw new Error('Claude API error');
+    if (!openaiRes.ok) {
+      throw new Error('OpenAI API error');
     }
 
-    const claudeData = await claudeRes.json();
-    const reply = claudeData.content?.[0]?.text ?? '응답을 받지 못했습니다.';
+    const openaiData = await openaiRes.json();
+    const reply = openaiData.choices?.[0]?.message?.content ?? '응답을 받지 못했습니다.';
 
     const alertKeywords = process.env.ALERT_KEYWORD
       ? process.env.ALERT_KEYWORD.split(',').map(k => k.trim())
