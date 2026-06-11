@@ -207,6 +207,11 @@
   let messages = [];
   let isLoading = false;
 
+  function scrollBottom() {
+    const container = document.getElementById('messages');
+    setTimeout(() => container.scrollTop = container.scrollHeight, 100);
+  }
+
   window.onload = () => {
     addBotMessage('안녕하세요! 경기도 5070 일자리박람회 안내 AI입니다 😊\n일정, 참여기업, 채용정보, 신청 방법 등 무엇이든 물어보세요!', true);
   };
@@ -240,7 +245,7 @@
       });
       container.appendChild(qr);
     }
-    container.scrollTop = container.scrollHeight;
+    scrollBottom();
   }
 
   function addUserMessage(text) {
@@ -252,7 +257,7 @@
     div.textContent = text;
     row.appendChild(div);
     container.appendChild(row);
-    container.scrollTop = container.scrollHeight;
+    scrollBottom();
   }
 
   function showTyping() {
@@ -272,7 +277,7 @@
     row.appendChild(avatar);
     row.appendChild(div);
     container.appendChild(row);
-    container.scrollTop = container.scrollHeight;
+    scrollBottom();
   }
 
   function hideTyping() {
