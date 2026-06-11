@@ -234,14 +234,7 @@ export default async function handler(req) {
     let reply =
   openaiData.choices?.[0]?.message?.content ??
   '응답을 받지 못했습니다.';
-
-reply = reply
-  .replace(/\s*(다른|추가로?|더|혹시)\s*궁금.{0,30}(있으시면|있으면|있다면).{0,30}(말씀|연락|문의).{0,20}[.!~]*\s*$/gi, '')
-  .replace(/\s*언제든지\s*(말씀|연락|문의|물어).{0,20}[.!~]*\s*$/gi, '')
-  .replace(/\s*도움이\s*필요하시면.{0,30}[.!~]*\s*$/gi, '')
-  .replace(/\s*편하게\s*(말씀|연락|문의).{0,20}[.!~]*\s*$/gi, '')
-  .trim();
-
+    
     const alertKeywords = process.env.ALERT_KEYWORD
       ? process.env.ALERT_KEYWORD.split(',').map(k => k.trim())
       : DEFAULT_ALERT_KEYWORDS;
