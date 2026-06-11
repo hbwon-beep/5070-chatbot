@@ -9,8 +9,9 @@ const SYSTEM_PROMPT = `당신은 "2026 경기도 5070 일자리박람회" 공식
 3. 정보가 없거나 불확실하면 홈페이지(www.5070job.com) 또는 운영사무국(1660-3352)을 안내합니다.
 4. 일반 상식, 취업 조언, 채용시장 정보, AI의 추론을 추가하지 않습니다.
 5. 답변은 최대 5문장 이내로 작성합니다.
-6. 답변 마지막에 인사말, 추가 안내, 권유 문구를 붙이지 않습니다.
-7. 특정 기업의 연봉, 합격 가능성, 근무환경은 답변하지 않습니다.
+6. 답변 마지막에 과도한 홍보성 문구는 붙이지 마세요. 단, 한 줄의 짧은 따뜻한 마무리는 괜찮습니다.
+7. 간결하되 차갑지 않게, 방문자를 직접 맞이하는 것처럼 전달하세요.
+8. 특정 기업의 연봉, 합격 가능성, 근무환경은 답변하지 않습니다.
 
 【응답 규칙】
 - 항상 한국어로 답변하세요
@@ -235,11 +236,10 @@ export default async function handler(req) {
   '응답을 받지 못했습니다.';
 
 reply = reply
-  .replace(/궁금한 점이 있으시면.*$/gi, '')
-  .replace(/도움이 필요하시면.*$/gi, '')
-  .replace(/추가 문의.*$/gi, '')
-  .replace(/문의 바랍니다.*$/gi, '')
-  .replace(/참고하시기 바랍니다.*$/gi, '')
+  .replace(/\s*(다른|추가로?|더|혹시)\s*궁금.{0,30}(있으시면|있으면|있다면).{0,30}(말씀|연락|문의).{0,20}[.!~]*\s*$/gi, '')
+  .replace(/\s*언제든지\s*(말씀|연락|문의|물어).{0,20}[.!~]*\s*$/gi, '')
+  .replace(/\s*도움이\s*필요하시면.{0,30}[.!~]*\s*$/gi, '')
+  .replace(/\s*편하게\s*(말씀|연락|문의).{0,20}[.!~]*\s*$/gi, '')
   .trim();
 
     const alertKeywords = process.env.ALERT_KEYWORD
@@ -249,23 +249,19 @@ reply = reply
       lastUserMessage.includes(keyword) || reply.includes(keyword)
     );
 
-    const appsScriptUrl = process.env.APPS_SCRIPT_URL;
+const appsScriptUrl = process.env.APPS_SCRIPT_URL;
     if (appsScriptUrl) {
-      try {
-        await fetch(appsScriptUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: sessionId || 'unknown',
-            userMessage: lastUserMessage,
-            botReply: reply,
-            needsAlert,
-            timestamp: new Date().toISOString(),
-          }),
-        });
-      } catch (logErr) {
-        console.error('Logging error:', logErr);
-      }
+      fetch(appsScriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: sessionId || 'unknown',
+          userMessage: lastUserMessage,
+          botReply: reply,
+          needsAlert,
+          timestamp: new Date().toISOString(),
+        }),
+      }).catch(logErr => console.error('Logging error:', logErr));
     }
 
     return new Response(JSON.stringify({ reply }), {
