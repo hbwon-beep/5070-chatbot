@@ -3,132 +3,289 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>5070 챗봇 테스트</title>
+  <title>5070 일자리박람회 AI</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: -apple-system, 'Noto Sans KR', sans-serif;
-      background: #e8edf6;
-      display: flex; justify-content: center; align-items: center;
-      min-height: 100vh; padding: 20px;
+      font-family: 'Noto Sans KR', -apple-system, sans-serif;
+      background: linear-gradient(135deg, #e0e9ff 0%, #ede9fe 100%);
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
     }
+
+    /* ── 전체 래퍼 ─────────────────────────────────── */
     .chat-wrap {
       width: 100%; max-width: 420px;
-      display: flex; flex-direction: column;
       height: 100dvh; max-height: 760px;
-      border-radius: 28px; overflow: hidden;
-      box-shadow: 0 24px 64px rgba(9,40,90,0.16), 0 4px 16px rgba(0,0,0,0.06);
-      background: #f5f7fb;
+      background: #fff;
+      border-radius: 32px;
+      box-shadow:
+        0 32px 80px rgba(79, 70, 229, 0.18),
+        0 8px 24px rgba(0, 0, 0, 0.08);
+      display: flex; flex-direction: column;
+      overflow: hidden;
     }
+
+    /* ── 헤더 ─────────────────────────────────────── */
     .header {
-      background: #09285a; padding: 16px 20px;
-      display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+      background: linear-gradient(135deg, #1e40af 0%, #4f46e5 100%);
+      padding: 18px 20px 16px;
+      display: flex; align-items: center; gap: 12px;
+      flex-shrink: 0; position: relative; overflow: hidden;
     }
-    .header-icon {
-      width: 40px; height: 40px; background: rgba(255,255,255,0.12);
-      border-radius: 14px; display: flex; align-items: center;
-      justify-content: center; font-size: 18px; flex-shrink: 0;
+    .header::before {
+      content: '';
+      position: absolute; top: -30px; right: -20px;
+      width: 120px; height: 120px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 50%;
     }
-    .header-title { font-size: 14px; font-weight: 700; color: #fff; }
-    .header-sub { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+    .header::after {
+      content: '';
+      position: absolute; bottom: -40px; right: 40px;
+      width: 80px; height: 80px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 50%;
+    }
+    .avatar {
+      width: 44px; height: 44px; flex-shrink: 0;
+      background: rgba(255,255,255,0.18);
+      border: 1.5px solid rgba(255,255,255,0.3);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; position: relative; z-index: 1;
+    }
+    .header-info { flex: 1; position: relative; z-index: 1; }
+    .header-title {
+      font-size: 14px; font-weight: 700; color: #fff; line-height: 1.3;
+    }
+    .header-sub {
+      font-size: 11px; color: rgba(255,255,255,0.65); margin-top: 3px;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .status-dot {
+      width: 6px; height: 6px; background: #4ade80;
+      border-radius: 50%; flex-shrink: 0;
+      box-shadow: 0 0 0 2px rgba(74,222,128,0.3);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 2px rgba(74,222,128,0.3)} 50%{box-shadow:0 0 0 4px rgba(74,222,128,0.1)} }
     .header-badge {
-      margin-left: auto; background: rgba(255,255,255,0.13);
-      color: rgba(255,255,255,0.85); font-size: 10px; font-weight: 600;
-      padding: 3px 9px; border-radius: 20px;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: rgba(255,255,255,0.9);
+      font-size: 10px; font-weight: 600;
+      padding: 4px 10px; border-radius: 20px;
+      position: relative; z-index: 1; flex-shrink: 0;
     }
-    .online-dot {
-      width: 6px; height: 6px; background: #4ade80; border-radius: 50%;
-      display: inline-block; margin-right: 5px; vertical-align: middle;
-    }
+
+    /* ── 공지 바 ───────────────────────────────────── */
     .notice {
-      background: #eef2fb; padding: 7px 16px;
-      font-size: 11px; color: #8a96b0; text-align: center;
-      border-bottom: 1px solid #e4e9f4; flex-shrink: 0;
+      background: #f0f4ff;
+      border-bottom: 1px solid #e0e7ff;
+      padding: 7px 18px;
+      font-size: 11px; color: #6366f1; text-align: center;
+      flex-shrink: 0; font-weight: 500;
     }
+
+    /* ── 메시지 영역 ───────────────────────────────── */
     .messages {
-      flex: 1; overflow-y: auto; padding: 20px 16px;
-      display: flex; flex-direction: column; gap: 4px;
+      flex: 1; overflow-y: auto;
+      padding: 20px 16px 12px;
+      display: flex; flex-direction: column;
+      gap: 0;
+      background: #fafbff;
     }
     .messages::-webkit-scrollbar { width: 3px; }
-    .messages::-webkit-scrollbar-thumb { background: #d0d8e8; border-radius: 4px; }
-    .msg-group { display: flex; flex-direction: column; gap: 3px; margin-bottom: 10px; }
-    .msg-group.user { align-items: flex-end; }
-    .msg-group.bot { align-items: flex-start; }
+    .messages::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 3px; }
+
+    /* ── 말풍선 그룹 ────────────────────────────────── */
+    .msg-group {
+      display: flex; flex-direction: column;
+      margin-bottom: 14px;
+      animation: msgIn 0.2s ease-out both;
+    }
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .msg-group.user  { align-items: flex-end; }
+    .msg-group.bot   { align-items: flex-start; }
+
+    /* 봇 아이콘 */
+    .bot-row { display: flex; align-items: flex-end; gap: 8px; }
+    .bot-icon {
+      width: 30px; height: 30px; flex-shrink: 0;
+      background: linear-gradient(135deg, #1e40af, #4f46e5);
+      border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; font-size: 13px;
+      box-shadow: 0 2px 8px rgba(79,70,229,0.3);
+      margin-bottom: 2px;
+    }
+
     .msg {
-      max-width: 80%; font-size: 14px; line-height: 1.65;
-      word-break: break-word; padding: 10px 14px;
+      max-width: 78%; font-size: 14px; line-height: 1.7;
+      word-break: keep-all; padding: 11px 16px;
+      border-radius: 20px;
     }
     .msg-group.bot .msg {
-      background: #fff; color: #1a2340;
-      border-radius: 4px 18px 18px 18px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      background: #fff;
+      color: #1e293b;
+      border-radius: 4px 20px 20px 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      border: 1px solid rgba(0,0,0,0.04);
     }
     .msg-group.user .msg {
-      background: #09285a; color: #fff;
-      border-radius: 18px 4px 18px 18px;
+      background: linear-gradient(135deg, #1e40af, #4f46e5);
+      color: #fff;
+      border-radius: 20px 4px 20px 20px;
+      box-shadow: 0 4px 16px rgba(79,70,229,0.35);
     }
-    .msg a { color: #2563eb; text-decoration: underline; word-break: break-all; }
-    .msg-group.user .msg a { color: #93c5fd; }
-    .typing-dots { display: flex; gap: 4px; padding: 2px 0; }
+    .msg a {
+      color: #4f46e5; text-decoration: none;
+      font-weight: 500; display: inline-block;
+      border-bottom: 1px solid rgba(79,70,229,0.3);
+      transition: border-color 0.15s;
+    }
+    .msg a:hover { border-bottom-color: #4f46e5; }
+    .msg-group.user .msg a { color: #bfdbfe; border-bottom-color: rgba(191,219,254,0.4); }
+
+    /* 타이핑 */
+    .typing-dots { display: flex; gap: 4px; padding: 1px 0; }
     .typing-dots span {
-      width: 7px; height: 7px; background: #c5cee0; border-radius: 50%;
-      animation: bounce 1.2s infinite;
+      width: 7px; height: 7px;
+      background: #c7d2fe; border-radius: 50%;
+      animation: bounce 1.2s ease-in-out infinite;
     }
     .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
     .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
     @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-5px)} }
-    .quick-replies { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; margin-bottom: 6px; }
-    .quick-btn {
-      font-size: 12.5px; padding: 6px 13px; border-radius: 20px;
-      border: 1.5px solid #c8d3ea; color: #3a5a9a; background: #fff;
-      cursor: pointer; transition: all 0.15s; white-space: nowrap; font-family: inherit;
-    }
-    .quick-btn:hover { background: #09285a; color: #fff; border-color: #09285a; }
-    .role-btns { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+
+    /* ── 역할 선택 버튼 ────────────────────────────── */
+    .role-btns { display: flex; gap: 8px; margin-top: 8px; }
     .role-btn {
-      flex: 1; min-width: 120px; padding: 10px 14px; border-radius: 12px;
-      border: 2px solid #09285a; color: #09285a; background: #fff;
-      cursor: pointer; font-size: 13px; font-weight: 600;
-      transition: all 0.15s; font-family: inherit; text-align: center;
+      flex: 1; padding: 12px 10px; border-radius: 14px;
+      background: #f0f4ff;
+      border: 1.5px solid #c7d2fe;
+      color: #3730a3; font-size: 13px; font-weight: 600;
+      cursor: pointer; text-align: center;
+      font-family: inherit;
+      transition: all 0.15s;
+      line-height: 1.4;
     }
-    .role-btn:hover { background: #09285a; color: #fff; }
+    .role-btn:hover {
+      background: linear-gradient(135deg, #1e40af, #4f46e5);
+      color: #fff; border-color: transparent;
+      box-shadow: 0 4px 14px rgba(79,70,229,0.35);
+      transform: translateY(-1px);
+    }
+    .role-btn .btn-icon { font-size: 20px; display: block; margin-bottom: 5px; }
+
+    /* ── 빠른 답변 칩 ──────────────────────────────── */
+    .quick-replies {
+      display: flex; flex-wrap: wrap;
+      gap: 7px; margin-top: 8px;
+    }
+    .quick-btn {
+      font-size: 12.5px; padding: 7px 14px;
+      border-radius: 20px;
+      border: 1.5px solid #c7d2fe;
+      color: #4338ca; background: #f0f4ff;
+      cursor: pointer; font-family: inherit;
+      font-weight: 500; white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .quick-btn:hover {
+      background: linear-gradient(135deg, #1e40af, #4f46e5);
+      color: #fff; border-color: transparent;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(79,70,229,0.3);
+    }
+
+    /* ── 알림 배너 ─────────────────────────────────── */
+    .alert-banner {
+      margin: 0 14px 8px;
+      padding: 10px 14px;
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 12px;
+      font-size: 12.5px; color: #78350f;
+      display: none; flex-shrink: 0;
+      line-height: 1.6;
+    }
+    .alert-banner.show { display: block; }
+
+    /* ── 입력 영역 ─────────────────────────────────── */
     .input-area {
-      padding: 12px 14px; background: #fff;
-      border-top: 1px solid #eaeef6;
-      display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0;
+      padding: 12px 14px 14px;
+      background: #fff;
+      border-top: 1px solid #e0e7ff;
+      display: flex; gap: 8px; align-items: flex-end;
+      flex-shrink: 0;
     }
     textarea {
-      flex: 1; border: 1.5px solid #e2e8f4; border-radius: 20px;
-      padding: 10px 16px; font-size: 14px; resize: none; outline: none;
-      max-height: 100px; min-height: 42px; line-height: 1.4;
-      font-family: inherit; color: #1a2340; background: #f8faff;
+      flex: 1;
+      background: #f0f4ff;
+      border: 1.5px solid #e0e7ff;
+      border-radius: 20px;
+      padding: 10px 16px;
+      font-size: 14px; resize: none; outline: none;
+      max-height: 100px; min-height: 42px;
+      line-height: 1.5; font-family: inherit;
+      color: #1e293b;
       transition: border-color 0.2s, background 0.2s;
     }
-    textarea:focus { border-color: #09285a; background: #fff; }
-    textarea::placeholder { color: #aab4cc; }
-    .send-btn {
-      width: 42px; height: 42px; border-radius: 50%; background: #09285a;
-      border: none; cursor: pointer; display: flex; align-items: center;
-      justify-content: center; flex-shrink: 0; transition: background 0.15s, transform 0.1s;
+    textarea:focus {
+      border-color: #818cf8;
+      background: #fff;
     }
-    .send-btn:hover { background: #0d3878; }
-    .send-btn:active { transform: scale(0.93); }
-    .send-btn:disabled { background: #c8d0e0; cursor: not-allowed; }
-    .send-btn svg { width: 16px; height: 16px; fill: white; margin-left: 1px; }
+    textarea::placeholder { color: #a5b4fc; }
+    .send-btn {
+      width: 42px; height: 42px; flex-shrink: 0;
+      background: linear-gradient(135deg, #1e40af, #4f46e5);
+      border: none; border-radius: 50%;
+      cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      box-shadow: 0 4px 14px rgba(79,70,229,0.4);
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    }
+    .send-btn:hover { transform: scale(1.07); box-shadow: 0 6px 18px rgba(79,70,229,0.45); }
+    .send-btn:active { transform: scale(0.94); }
+    .send-btn:disabled {
+      background: #e0e7ff; box-shadow: none; cursor: not-allowed;
+    }
+    .send-btn svg { width: 16px; height: 16px; fill: #fff; margin-left: 1px; }
+    .send-btn:disabled svg { fill: #a5b4fc; }
   </style>
 </head>
 <body>
 <div class="chat-wrap">
   <div class="header">
-    <div class="header-icon">💼</div>
-    <div>
+    <div class="avatar">💼</div>
+    <div class="header-info">
       <div class="header-title">경기도 5070 일자리박람회 AI</div>
-      <div class="header-sub"><span class="online-dot"></span>일정 · 참여기업 · 채용정보 안내</div>
+      <div class="header-sub">
+        <span class="status-dot"></span>
+        일정 · 참여기업 · 채용정보 안내
+      </div>
     </div>
     <div class="header-badge">테스트</div>
   </div>
-  <div class="notice">개인정보(이름, 연락처 등)는 입력하지 마세요</div>
+
+  <div class="notice">🔒 개인정보(이름, 연락처 등)는 입력하지 마세요</div>
+
   <div class="messages" id="messages"></div>
+
+  <div class="alert-banner" id="alertBanner">
+    ⚠️ 담당자 연결이 필요해 보입니다. 운영사무국으로 연락해 주세요.<br>
+    구직자: <strong>1660-3352</strong> · 기업: <strong>070-4420-6642</strong>
+    <span style="opacity:.7"> (평일 10:00~18:00)</span>
+  </div>
+
   <div class="input-area">
     <textarea id="input" placeholder="궁금한 점을 물어보세요..." rows="1"
       onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
@@ -141,50 +298,59 @@
 <script>
   const API_URL = 'https://5070-chatbot.vercel.app/api/chat';
   const QUICK_REPLIES_JOBSEEKER = ['참가비가 있나요?', '사전신청 방법', '이력서 필요한가요?', '운영사무국 연락처'];
-  const QUICK_REPLIES_COMPANY = ['기업 참가비가 있나요?', '부스 신청 방법', '부스 구성이 어떻게 되나요?', '기업 담당 연락처'];
+  const QUICK_REPLIES_COMPANY   = ['기업 참가비가 있나요?', '부스 신청 방법', '부스 구성이 어떻게 되나요?', '기업 담당 연락처'];
   const SESSION_ID = 'test_' + Date.now();
-  let messages = [];
+  let messages  = [];
   let isLoading = false;
-  let userRole = null;
+  let userRole  = null;
 
   window.onload = () => {
     addBotMessage('안녕하세요! 😊 경기도 5070 일자리박람회입니다.\n혹시 어떤 목적으로 방문하셨나요?', false, true);
   };
 
-  // URL만 정확하게 링크로 변환 (뒤에 조사 붙지 않게)
+  // 줄 단독 URL만 링크로 변환 (조사 붙는 버그 방지)
   function linkify(text) {
-    const escaped = text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    // URL 패턴: 공백/줄바꿈/문장부호 전까지만 매칭
-    return escaped.replace(/(https?:\/\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+|www\.[\w\-._~:/?#[\]@!$&'()*+,;=%]+)/g, (url) => {
-      // 끝에 붙은 한국어 조사 제거
-      const cleanUrl = url.replace(/[가-힣]+$/, '');
-      const href = cleanUrl.startsWith('http') ? cleanUrl : 'https://' + cleanUrl;
-      return `<a href="${href}" target="_blank" rel="noopener noreferrer">${cleanUrl}</a>`;
-    });
+    return text.split('\n').map(line => {
+      const trimmed = line.trim();
+      if (/^(https?:\/\/|www\.)\S+$/.test(trimmed)) {
+        const href = trimmed.startsWith('http') ? trimmed : 'https://' + trimmed;
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer">${trimmed}</a>`;
+      }
+      return line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }).join('\n');
   }
 
   function addBotMessage(text, showQuick = false, showRoleBtns = false) {
     const container = document.getElementById('messages');
     const group = document.createElement('div');
     group.className = 'msg-group bot';
+
+    const row = document.createElement('div');
+    row.className = 'bot-row';
+
+    const icon = document.createElement('div');
+    icon.className = 'bot-icon';
+    icon.textContent = '💼';
+
     const div = document.createElement('div');
     div.className = 'msg';
     div.style.whiteSpace = 'pre-line';
     div.innerHTML = linkify(text);
-    group.appendChild(div);
+
+    row.appendChild(icon);
+    row.appendChild(div);
+    group.appendChild(row);
     container.appendChild(group);
 
     if (showRoleBtns) {
       const rb = document.createElement('div');
       rb.className = 'role-btns';
       rb.id = 'role-btns';
-      [['jobseeker', '구직자로 참여합니다'], ['company', '기업 담당자입니다']].forEach(([role, label]) => {
+      rb.style.paddingLeft = '38px';
+      [['jobseeker','👤','구직자로 참여합니다'], ['company','🏢','기업 담당자입니다']].forEach(([role, icon, label]) => {
         const btn = document.createElement('button');
         btn.className = 'role-btn';
-        btn.textContent = label;
+        btn.innerHTML = `<span class="btn-icon">${icon}</span>${label}`;
         btn.onclick = () => selectRole(role, label, rb);
         rb.appendChild(btn);
       });
@@ -194,6 +360,7 @@
     if (showQuick) {
       const qr = document.createElement('div');
       qr.className = 'quick-replies';
+      qr.style.paddingLeft = '38px';
       const replies = userRole === 'company' ? QUICK_REPLIES_COMPANY : QUICK_REPLIES_JOBSEEKER;
       replies.forEach(label => {
         const btn = document.createElement('button');
@@ -204,6 +371,7 @@
       });
       container.appendChild(qr);
     }
+
     container.scrollTop = container.scrollHeight;
   }
 
@@ -236,10 +404,17 @@
     const group = document.createElement('div');
     group.className = 'msg-group bot';
     group.id = 'typing';
+    const row = document.createElement('div');
+    row.className = 'bot-row';
+    const icon = document.createElement('div');
+    icon.className = 'bot-icon';
+    icon.textContent = '💼';
     const div = document.createElement('div');
     div.className = 'msg';
     div.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
-    group.appendChild(div);
+    row.appendChild(icon);
+    row.appendChild(div);
+    group.appendChild(row);
     container.appendChild(group);
     container.scrollTop = container.scrollHeight;
   }
@@ -256,21 +431,26 @@
     messages.push({ role: 'user', content: text });
     document.getElementById('sendBtn').disabled = true;
     showTyping();
+
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages, sessionId: SESSION_ID }),
+        body: JSON.stringify({ messages, role: userRole, sessionId: SESSION_ID }),
       });
       const data = await res.json();
       const reply = data.reply || data.error || '오류가 발생했습니다.';
       hideTyping();
       addBotMessage(reply);
       messages.push({ role: 'assistant', content: reply });
+      if (data.needsAlert) {
+        document.getElementById('alertBanner').classList.add('show');
+      }
     } catch (e) {
       hideTyping();
       addBotMessage('연결에 문제가 생겼습니다.\n운영사무국(1660-3352)으로 문의해 주세요.');
     }
+
     isLoading = false;
     document.getElementById('sendBtn').disabled = false;
   }
