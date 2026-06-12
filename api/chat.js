@@ -193,10 +193,15 @@ const ROLE_CONTEXT = {
   company:   '\n\n[현재 사용자: 기업 담당자입니다. 기업 참가 신청·부스 운영·채용 홍보 관점에서 안내하세요.]',
 };
 
-// ─── 알림 감지 키워드 ────────────────────────────────────────────────────────
+// 배너 표시: 명시적 연결 요청
 const DEFAULT_ALERT_KEYWORDS = [
-  '담당자 연결', '상담원', '직원 연결', '불만', '화가', '항의', '민원',
-  '환불', '오류', '안되', '안 돼', '고장', '연결해', '불편', '문제있', '컴플레인',
+  '담당자 연결', '상담원', '직원 연결',
+];
+
+// 로깅만 (감정/불만 표현 — 배너 없이 시트에만 기록)
+const DEFAULT_LOG_KEYWORDS = [
+  '불만', '화가', '항의', '민원', '불편', '컴플레인',
+  '오류', '안되', '안 돼', '고장', '문제있', '환불',
 ];
 
 // ─── 메인 핸들러 ─────────────────────────────────────────────────────────────
@@ -257,14 +262,18 @@ export default async function handler(req) {
     const openaiData = await openaiRes.json();
     const reply = openaiData.choices?.[0]?.message?.content ?? '응답을 받지 못했습니다.';
 
-    // 알림 키워드 감지
+    // 키워드 감지
     const alertKeywords = process.env.ALERT_KEYWORD
       ? process.env.ALERT_KEYWORD.split(',').map((k) => k.trim())
       : DEFAULT_ALERT_KEYWORDS;
 
-    const needsAlert = alertKeywords.some(
-      (kw) => lastUserMessage.includes(kw) || reply.includes(kw)
-    );
+    const logKeywords = process.env.LOG_KEYWORD
+      ? process.env.LOG_KEYWORD.split(',').map((k) => k.trim())
+      : DEFAULT_LOG_KEYWORDS;
+
+    const combined = lastUserMessage + ' ' + reply;
+    const needsAlert = alertKeywords.some((kw) => combined.includes(kw)); // 배너 표시
+    const needsLog   = needsAlert || logKeywords.some((kw) => combined.includes(kw)); // 시트 기록
 
     // Google Sheets 로깅 (비동기 — 실패해도 응답은 전송)
     if (process.env.APPS_SCRIPT_URL) {
@@ -277,6 +286,7 @@ export default async function handler(req) {
           userMessage: lastUserMessage,
           botReply: reply,
           needsAlert,
+          needsLog,
           timestamp: new Date().toISOString(),
         }),
       }).catch((err) => console.error('Logging error:', err));
