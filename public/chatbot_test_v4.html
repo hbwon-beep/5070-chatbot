@@ -95,10 +95,9 @@
     /* ── 메시지 영역 ───────────────────────────────── */
     .messages {
       flex: 1; overflow-y: auto;
-      padding: 20px 16px 12px;
+      padding: 20px 16px 24px;
       display: flex; flex-direction: column;
       gap: 0;
-      background: #fafbff;
     }
     .messages::-webkit-scrollbar { width: 3px; }
     .messages::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 3px; }
@@ -264,19 +263,39 @@
     .send-btn:disabled svg { fill: #a5b4fc; }
 
     /* ── 상단 고정 빠른 질문 바 ────────────────────── */
-    .pinned-chips {
-      padding: 10px 14px;
+    .pinned-chips-wrap {
+      position: relative;
+      flex-shrink: 0;
+      display: none;
       background: #fff;
       border-bottom: 1px solid #e0e7ff;
-      display: none;
+      align-items: center;
+    }
+    .pinned-chips-wrap.show { display: flex; }
+    .chip-arrow {
+      width: 28px; height: 100%; flex-shrink: 0;
+      background: #fff;
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: #818cf8; font-size: 14px;
+      transition: color 0.15s;
+      padding: 0;
+    }
+    .chip-arrow:hover { color: #4338ca; }
+    .chip-arrow.hidden { visibility: hidden; pointer-events: none; }
+    .chip-arrow-left { box-shadow: 4px 0 8px #fff; z-index: 1; }
+    .chip-arrow-right { box-shadow: -4px 0 8px #fff; z-index: 1; }
+    .pinned-chips {
+      flex: 1;
+      padding: 10px 0;
+      display: flex;
       flex-wrap: nowrap;
       overflow-x: auto;
       gap: 7px;
-      flex-shrink: 0;
       scrollbar-width: none;
+      scroll-behavior: smooth;
     }
     .pinned-chips::-webkit-scrollbar { display: none; }
-    .pinned-chips.show { display: flex; }
     .pinned-chip {
       font-size: 12px; padding: 6px 13px;
       border-radius: 20px;
@@ -310,7 +329,11 @@
 
   <div class="notice">🔒 개인정보(이름, 연락처 등)는 입력하지 마세요</div>
 
-  <div class="pinned-chips" id="pinnedChips"></div>
+  <div class="pinned-chips-wrap" id="pinnedChipsWrap">
+    <button class="chip-arrow chip-arrow-left hidden" id="chipLeft" onclick="scrollChips(-1)">&#8249;</button>
+    <div class="pinned-chips" id="pinnedChips"></div>
+    <button class="chip-arrow chip-arrow-right hidden" id="chipRight" onclick="scrollChips(1)">&#8250;</button>
+  </div>
 
   <div class="messages" id="messages"></div>
 
@@ -343,6 +366,16 @@
   };
 
   // 줄 단독 URL만 링크로 변환 (조사 붙는 버그 방지)
+  function scrollToBottom() {
+    const el = document.getElementById('messages');
+    // rAF 두 번 → 애니메이션·렌더링 완료 후 스크롤
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.scrollTop = el.scrollHeight;
+      });
+    });
+  }
+
   function linkify(text) {
     return text.split('\n').map(line => {
       const trimmed = line.trim();
@@ -406,7 +439,7 @@
       container.appendChild(qr);
     }
 
-    container.scrollTop = container.scrollHeight;
+    scrollToBottom();
   }
 
   function selectRole(role, label, rbEl) {
@@ -433,7 +466,22 @@
       btn.onclick = () => sendUserMessage(label);
       wrap.appendChild(btn);
     });
-    wrap.classList.add('show');
+    document.getElementById('pinnedChipsWrap').classList.add('show');
+    wrap.addEventListener('scroll', updateArrows);
+    setTimeout(updateArrows, 50);
+  }
+
+  function scrollChips(dir) {
+    const el = document.getElementById('pinnedChips');
+    el.scrollBy({ left: dir * 140, behavior: 'smooth' });
+  }
+
+  function updateArrows() {
+    const el = document.getElementById('pinnedChips');
+    const atStart = el.scrollLeft <= 4;
+    const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
+    document.getElementById('chipLeft').classList.toggle('hidden', atStart);
+    document.getElementById('chipRight').classList.toggle('hidden', atEnd);
   }
 
   function addUserMessage(text) {
@@ -445,7 +493,7 @@
     div.textContent = text;
     group.appendChild(div);
     container.appendChild(group);
-    container.scrollTop = container.scrollHeight;
+    scrollToBottom();
   }
 
   function showTyping() {
@@ -465,7 +513,7 @@
     row.appendChild(div);
     group.appendChild(row);
     container.appendChild(group);
-    container.scrollTop = container.scrollHeight;
+    scrollToBottom();
   }
 
   function hideTyping() {
