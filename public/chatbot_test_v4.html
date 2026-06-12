@@ -20,7 +20,7 @@
     /* ── 전체 래퍼 ─────────────────────────────────── */
     .chat-wrap {
       width: 100%; max-width: 420px;
-      height: 100dvh; max-height: 760px;
+      height: calc(100dvh - 40px); max-height: 760px;
       background: #fff;
       border-radius: 32px;
       box-shadow:
@@ -120,10 +120,10 @@
     .bot-row { display: flex; align-items: flex-end; gap: 8px; }
     .bot-icon {
       width: 30px; height: 30px; flex-shrink: 0;
-      background: linear-gradient(135deg, #1e40af, #4f46e5);
+      background: #ede9fe;
+      border: 1.5px solid #c4b5fd;
       border-radius: 50%; display: flex; align-items: center;
-      justify-content: center; font-size: 13px;
-      box-shadow: 0 2px 8px rgba(79,70,229,0.3);
+      justify-content: center; font-size: 15px;
       margin-bottom: 2px;
     }
 
@@ -265,7 +265,7 @@
 <body>
 <div class="chat-wrap">
   <div class="header">
-    <div class="avatar">💼</div>
+    <div class="avatar">✨</div>
     <div class="header-info">
       <div class="header-title">경기도 5070 일자리박람회 AI</div>
       <div class="header-sub">
@@ -330,7 +330,7 @@
 
     const icon = document.createElement('div');
     icon.className = 'bot-icon';
-    icon.textContent = '💼';
+    icon.textContent = '✨';
 
     const div = document.createElement('div');
     div.className = 'msg';
@@ -408,7 +408,7 @@
     row.className = 'bot-row';
     const icon = document.createElement('div');
     icon.className = 'bot-icon';
-    icon.textContent = '💼';
+    icon.textContent = '✨';
     const div = document.createElement('div');
     div.className = 'msg';
     div.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
