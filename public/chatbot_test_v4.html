@@ -176,7 +176,7 @@
       background: #2563EB; color: #fff;
       border-color: #2563EB;
     }
-    .role-btn .btn-icon { font-size: 20px; display: block; margin-bottom: 5px; }
+    .role-btn .btn-icon { font-size: 22px; display: block; margin-bottom: 6px; }
 
     /* ── 타이핑 ─────────────────────── */
     .typing-dots { display: flex; gap: 4px; padding: 1px 0; }
@@ -320,7 +320,8 @@
       const rb = document.createElement('div');
       rb.className = 'role-btns';
       rb.id = 'role-btns';
-      [['jobseeker','👤','구직자로 참여합니다'], ['company','🏢','기업 담당자입니다']].forEach(([role, ic, label]) => {
+      [['jobseeker', '🤝', '구직자로 참여합니다'],
+       ['company',   '🏢', '기업 담당자입니다']].forEach(([role, ic, label]) => {
         const btn = document.createElement('button');
         btn.className = 'role-btn';
         btn.innerHTML = `<span class="btn-icon">${ic}</span>${label}`;
