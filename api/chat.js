@@ -213,7 +213,7 @@ const DEFAULT_LOG_KEYWORDS = [
 
 // ─── 메인 핸들러 (Cloudflare Workers 형식) ───────────────────────────────────
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {  // ctx 추가
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -283,21 +283,23 @@ export default {
       const needsAlert = alertKeywords.some((kw) => combined.includes(kw));
       const needsLog   = needsAlert || logKeywords.some((kw) => combined.includes(kw));
 
-      // Google Sheets 로깅 (비동기 — 실패해도 응답은 전송)
+      // Google Sheets 로깅 (ctx.waitUntil로 응답 후에도 완료 보장)
       if (env.APPS_SCRIPT_URL) {
-        fetch(env.APPS_SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: sessionId || 'unknown',
-            role: role || 'unknown',
-            userMessage: lastUserMessage,
-            botReply: reply,
-            needsAlert,
-            needsLog,
-            timestamp: new Date().toISOString(),
-          }),
-        }).catch((err) => console.error('Logging error:', err));
+        ctx.waitUntil(
+          fetch(env.APPS_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId: sessionId || 'unknown',
+              role: role || 'unknown',
+              userMessage: lastUserMessage,
+              botReply: reply,
+              needsAlert,
+              needsLog,
+              timestamp: new Date().toISOString(),
+            }),
+          }).catch((err) => console.error('Logging error:', err))
+        );
       }
 
       return new Response(JSON.stringify({ reply, needsAlert }), {
