@@ -1,3 +1,7 @@
 name = "5070-chatbot"
 main = "api/chat.js"
-compatibility_date = "2024-01-01"
+compatibility_date = "2026-06-29"
+
+[vars]
+ALERT_KEYWORD = "담당자 연결,상담원,직원 연결"
+APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyvPU9MABEieecucK11EJM2FAtOErbIpgdnwRINX0QyhWBRqo-ljycx2yWReXf6ZrMb0A/exec"
