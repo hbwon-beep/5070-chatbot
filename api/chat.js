@@ -1,5 +1,3 @@
-export const config = { runtime: 'edge' };
-
 // ─── 시스템 프롬프트 ─────────────────────────────────────────────────────────
 const SYSTEM_PROMPT = `당신은 "경기도 5070 일자리박람회" 공식 안내 AI입니다.
 방문객, 구직자, 기업 담당자에게 박람회 정보를 친절하고 정확하게 안내하는 역할을 합니다.
@@ -213,104 +211,106 @@ const DEFAULT_LOG_KEYWORDS = [
   '오류', '안되', '안 돼', '고장', '문제있', '환불',
 ];
 
-// ─── 메인 핸들러 ─────────────────────────────────────────────────────────────
-export default async function handler(req) {
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-  };
+// ─── 메인 핸들러 (Cloudflare Workers 형식) ───────────────────────────────────
+export default {
+  async fetch(req, env) {
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    };
 
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 200, headers: corsHeaders });
-  }
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405, headers: corsHeaders });
-  }
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { status: 200, headers: corsHeaders });
+    }
+    if (req.method !== 'POST') {
+      return new Response('Method not allowed', { status: 405, headers: corsHeaders });
+    }
 
-  try {
-    const { messages, role, sessionId } = await req.json();
+    try {
+      const { messages, role, sessionId } = await req.json();
 
-    if (!messages || !Array.isArray(messages)) {
-      return new Response(JSON.stringify({ error: '잘못된 요청입니다.' }), {
-        status: 400,
+      if (!messages || !Array.isArray(messages)) {
+        return new Response(JSON.stringify({ error: '잘못된 요청입니다.' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // 역할 컨텍스트 주입
+      const roleNote = ROLE_CONTEXT[role] ?? '';
+      const systemPrompt = SYSTEM_PROMPT + roleNote;
+
+      const lastUserMessage = messages[messages.length - 1]?.content || '';
+
+      // OpenAI API 호출
+      const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          temperature: 0.4,
+          max_tokens: 400,
+          presence_penalty: 0,
+          frequency_penalty: 0,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...messages.slice(-10),
+          ],
+        }),
+      });
+
+      if (!openaiRes.ok) {
+        throw new Error(`OpenAI API error: ${openaiRes.status}`);
+      }
+
+      const openaiData = await openaiRes.json();
+      const reply = openaiData.choices?.[0]?.message?.content ?? '응답을 받지 못했습니다.';
+
+      // 키워드 감지
+      const alertKeywords = env.ALERT_KEYWORD
+        ? env.ALERT_KEYWORD.split(',').map((k) => k.trim())
+        : DEFAULT_ALERT_KEYWORDS;
+
+      const logKeywords = env.LOG_KEYWORD
+        ? env.LOG_KEYWORD.split(',').map((k) => k.trim())
+        : DEFAULT_LOG_KEYWORDS;
+
+      const combined = lastUserMessage + ' ' + reply;
+      const needsAlert = alertKeywords.some((kw) => combined.includes(kw));
+      const needsLog   = needsAlert || logKeywords.some((kw) => combined.includes(kw));
+
+      // Google Sheets 로깅 (비동기 — 실패해도 응답은 전송)
+      if (env.APPS_SCRIPT_URL) {
+        fetch(env.APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: sessionId || 'unknown',
+            role: role || 'unknown',
+            userMessage: lastUserMessage,
+            botReply: reply,
+            needsAlert,
+            needsLog,
+            timestamp: new Date().toISOString(),
+          }),
+        }).catch((err) => console.error('Logging error:', err));
+      }
+
+      return new Response(JSON.stringify({ reply, needsAlert }), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+
+    } catch (error) {
+      console.error('Server error:', error);
+      return new Response(
+        JSON.stringify({ error: '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
-
-    // 역할 컨텍스트 주입
-    const roleNote = ROLE_CONTEXT[role] ?? '';
-    const systemPrompt = SYSTEM_PROMPT + roleNote;
-
-    const lastUserMessage = messages[messages.length - 1]?.content || '';
-
-    // OpenAI API 호출
-    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        temperature: 0.4,
-        max_tokens: 400,        // 300 → 400: 답변 중간 잘림 방지
-        presence_penalty: 0,
-        frequency_penalty: 0,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...messages.slice(-10), // 최근 10개 메시지만 전송
-        ],
-      }),
-    });
-
-    if (!openaiRes.ok) {
-      throw new Error(`OpenAI API error: ${openaiRes.status}`);
-    }
-
-    const openaiData = await openaiRes.json();
-    const reply = openaiData.choices?.[0]?.message?.content ?? '응답을 받지 못했습니다.';
-
-    // 키워드 감지
-    const alertKeywords = process.env.ALERT_KEYWORD
-      ? process.env.ALERT_KEYWORD.split(',').map((k) => k.trim())
-      : DEFAULT_ALERT_KEYWORDS;
-
-    const logKeywords = process.env.LOG_KEYWORD
-      ? process.env.LOG_KEYWORD.split(',').map((k) => k.trim())
-      : DEFAULT_LOG_KEYWORDS;
-
-    const combined = lastUserMessage + ' ' + reply;
-    const needsAlert = alertKeywords.some((kw) => combined.includes(kw)); // 배너 표시
-    const needsLog   = needsAlert || logKeywords.some((kw) => combined.includes(kw)); // 시트 기록
-
-    // Google Sheets 로깅 (비동기 — 실패해도 응답은 전송)
-    if (process.env.APPS_SCRIPT_URL) {
-      fetch(process.env.APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: sessionId || 'unknown',
-          role: role || 'unknown',
-          userMessage: lastUserMessage,
-          botReply: reply,
-          needsAlert,
-          needsLog,
-          timestamp: new Date().toISOString(),
-        }),
-      }).catch((err) => console.error('Logging error:', err));
-    }
-
-    return new Response(JSON.stringify({ reply, needsAlert }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
-  } catch (error) {
-    console.error('Server error:', error);
-    return new Response(
-      JSON.stringify({ error: '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-}
+  },
+};
