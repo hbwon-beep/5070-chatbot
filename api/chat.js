@@ -64,7 +64,7 @@ const EVENT_SCHEDULE = [
   {
     region: '양주',
     date: '2026-11-04',
-    location: '경기섬유종합지원센터',
+    location: '준비 중',
     time: '13:00~16:00',
     generalInquiry: true,
   },
